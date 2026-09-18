@@ -1442,6 +1442,8 @@ def Program.checkTypes
             | throw "unknown type"
           let some table := m.tableDecl? tableIndex
             | throw "unknown table"
+          if !m.vtCompat table.elemType .funcref then
+            throw "type mismatch"
           if !resultTypesCompat m signature.results functionResults then
             throw "type mismatch"
           let selectorType := table.addressType
@@ -1465,6 +1467,14 @@ def Program.checkTypes
               stack := []
               unreachable := true
               transfers := 0 :: next.transfers })
+      | .callIndirect _ tableIndex => do
+          let some table := m.tableDecl? tableIndex
+            | throw "unknown table"
+          if !m.vtCompat table.elemType .funcref then
+            throw "type mismatch"
+          match instruction.straightSig m locals with
+          | none => pure none
+          | some signature => some <$> state.applySig m signature
       | _ =>
           match instruction.straightSig m locals with
           | none => pure none
